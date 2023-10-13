@@ -1,20 +1,13 @@
 const express = require("express");
-const path = require("path");
 const router = express.Router();
-const products = [];
-const rootDir = require("../util/path");
 
+// const rootDir = require("../util/path");
+const productController = require("../controllers/products");
 // admin/add-product => GET
-router.get("/add-product", (req, res, next) => {
-//  path 只是一個key value pair, 名稱可以自訂
-  res.render("add-product", { pageTitle: "Add product", path: "/admin/add-product" });
-});
+// 渲染頁面
+router.get("/add-product", productController.getAddProduct);
 
-router.post("/add-product", (request, response, next) => {
-  console.log(request.body);
-  products.push({ title: request.body.title });
-  response.redirect("/");
-});
+// 把商品傳入
+router.post("/add-product", productController.postAddProduct);
 
-exports.routes = router;
-exports.products = products;
+module.exports = router;
