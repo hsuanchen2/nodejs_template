@@ -1,31 +1,50 @@
-// const products = [];
-
-// save products into a file
 const fs = require("fs");
 const path = require("path");
-const rootDir = require("../util/path");
+
+const p = path.join(
+  path.dirname(process.mainModule.filename),
+  "data",
+  "products.json"
+);
+
+const getProductsFromFile = (cb) => {
+  fs.readFile(p, (err, fileContent) => {
+    if (err) {
+      // 如果讀不到檔案，就傳空陣列當作參數傳入，，空陣列會讓ejs 偵測，並渲染 no products found
+      cb([]);
+    } else {
+      cb(JSON.parse(fileContent));
+    }
+  });
+};
 
 module.exports = class Product {
-  constructor(t) {
-    this.title = t;
+  constructor(title, imageUrl, description, price) {
+    this.title = title;
+    this.imageUrl = imageUrl;
+    this.description = description;
+    this.price = price;
   }
+
   save() {
-    const p = path.join(rootDir, "data", "products.json");
-    let products = [];
-    fs.readFile(p, (error, fileContent) => {
-      if (!error) {
-        products = JSON.parse(fileContent);
-      }
-      // 這邊一定要用arrow function
+    this.id = Math.random().toString();
+    getProductsFromFile((products) => {
       products.push(this);
-      // 把products 資料寫進路徑p檔案中
-      fs.writeFile(p, JSON.stringify(products), (error) => {
-        console.log(error);
+      fs.writeFile(p, JSON.stringify(products), (err) => {
+        console.log(err);
       });
     });
   }
-  // 定義一個靜態方法（static method）。靜態方法是指可以直接通過類（class）本身調用，而不需要實體化（即不需要創建類的物件）
-  static fetchAll() {
-    return products;
+
+  static fetchAll(cb) {
+    getProductsFromFile(cb);
+  }
+
+  static findById(id, cb) {
+    getProductsFromFile((products) => {
+      const product = products.find((p) => p.id === id);
+      console.log(product);
+      cb(product);
+    });
   }
 };
