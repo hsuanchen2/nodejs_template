@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-
+const Cart = require("../models/cart");
 const p = path.join(
   path.dirname(process.mainModule.filename),
   "data",
@@ -19,7 +19,8 @@ const getProductsFromFile = (cb) => {
 };
 
 module.exports = class Product {
-  constructor(title, imageUrl, description, price) {
+  constructor(id, title, imageUrl, description, price) {
+    this.id = id;
     this.title = title;
     this.imageUrl = imageUrl;
     this.description = description;
@@ -27,11 +28,42 @@ module.exports = class Product {
   }
 
   save() {
-    this.id = Math.random().toString();
+    // products 會是一個陣列
     getProductsFromFile((products) => {
-      products.push(this);
-      fs.writeFile(p, JSON.stringify(products), (err) => {
-        console.log(err);
+      // edit product 邏輯
+      if (this.id) {
+        const existingProductIndex = products.findIndex((p) => {
+          return p.id === this.id;
+        });
+        const updatedProduct = [...products];
+        updatedProduct[existingProductIndex] = this;
+        fs.writeFile(p, JSON.stringify(updatedProduct), (err) => {
+          console.log(err);
+        });
+      } else {
+        this.id = Math.random().toString();
+        products.push(this);
+        fs.writeFile(p, JSON.stringify(products), (err) => {
+          console.log(err);
+        });
+      }
+    });
+  }
+
+  static deleteById(productId) {
+    getProductsFromFile((products) => {
+      const product = products.find((product) => {
+        return product.id === productId;
+      });
+      // 找出需要刪除產品之外的產品
+      const updatedProduct = products.filter((product) => {
+        return productId !== product.id;
+      });
+      fs.writeFile(p, JSON.stringify(updatedProduct), (err) => {
+        // 刪除產品後也要把購物車的產品刪除
+        if (!err) {
+          Cart.deleteProduct(productId, product.price);
+        }
       });
     });
   }
@@ -43,7 +75,6 @@ module.exports = class Product {
   static findById(id, cb) {
     getProductsFromFile((products) => {
       const product = products.find((p) => p.id === id);
-      console.log(product);
       cb(product);
     });
   }
